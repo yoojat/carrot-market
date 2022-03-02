@@ -5,14 +5,16 @@ export interface ResponseType {
   [key: string]: any;
 }
 
+type method = 'GET' | 'POST' | 'DELETE';
+
 interface ConfigType {
-  method: 'GET' | 'POST' | 'DELETE';
+  methods: method[];
   handler: (req: NextApiRequest, res: NextApiResponse) => void;
   isPrivate?: boolean;
 }
 
 export default function withHandler({
-  method,
+  methods,
   isPrivate = true,
   handler,
 }: ConfigType) {
@@ -20,9 +22,12 @@ export default function withHandler({
     req: NextApiRequest,
     res: NextApiResponse
   ): Promise<any> {
-    if (req.method !== method) {
+    // request의 method와 api의 method방식이 다르면 실행 종료
+    if (req.method && !methods.includes(req.method as any)) {
       return res.status(405).end();
     }
+
+    // isPrivate함수일 경우 로그인 되어있지 않으면 실행되지 않도록 함
     if (isPrivate && !req.session.user) {
       return res.status(401).json({ ok: false, error: 'Plz log in' });
     }
